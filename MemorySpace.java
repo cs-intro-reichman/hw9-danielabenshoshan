@@ -58,10 +58,25 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		//// Replace the following statement with your code
-		return -1;
+		ListIterator listItr = freeList.iterator();
+		while (listItr.hasNext()) {
+			MemoryBlock current = listItr.next(); 
+			if (current.length == length) {
+				int address = current.baseAddress; 
+				allocatedList.addLast(current);
+				freeList.remove(current);
+				return address;  
+			}
+			if (current.length > length) {
+				MemoryBlock newBlock = new MemoryBlock(current.baseAddress, length); 
+				allocatedList.addLast(newBlock);
+				current.baseAddress += length; 
+				current.length -= length; 
+				return newBlock.baseAddress; 
+			}
+		}
+		return -1; 
 	}
-
 	/**
 	 * Frees the memory block whose base address equals the given address.
 	 * This implementation deletes the block whose base address equals the given 
@@ -71,7 +86,20 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		//// Write your code here
+		if (allocatedList.getSize() == 0) {
+			throw new IllegalArgumentException("index must be between 0 and size");
+		}
+		Node current = allocatedList.getFirst();
+		for(int i = 0; i < allocatedList.getSize(); i++) {
+			MemoryBlock allocatedBlock = current.block;
+			if (allocatedBlock.baseAddress == address) {
+				allocatedList.remove(current);
+
+				freeList.addLast(allocatedBlock);
+				return;
+			}
+			current = current.next;
+		}
 	}
 	
 	/**
@@ -88,6 +116,24 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		//// Write your code here
-	}
+		if (freeList.getSize() <= 1) {
+			return; 
+		}
+	
+		ListIterator freeItr = freeList.iterator();
+		while (freeItr.hasNext()) {
+			MemoryBlock current = freeItr.next();
+			ListIterator innerItr = freeList.iterator();
+
+			while (innerItr.hasNext()) {
+				MemoryBlock next = innerItr.next();
+	
+				if (next != current && current.baseAddress + current.length == next.baseAddress) {
+					current.length += next.length;
+					freeList.remove(next);
+					innerItr = freeList.iterator();
+				}
+			}
+		}
+	}	
 }
